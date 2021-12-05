@@ -6,9 +6,9 @@
 #define REPORTING_PERIOD_MS     1000 //Period between updates
 BluetoothSerial SerialBT;            //Rename Bluetooth 
 PulseOximeter pox;                   //Rename sensor
-uint32_t tsLastReport = 0;
-int distressCount = 0;
-bool startMeasure = false;
+uint32_t tsLastReport = 0;           //Start timer
+int distressCount = 0;               //Counter for sensor stabilisation
+bool startMeasure = false;           //Wait until M5 is ready to start measuring
 
 void onBeatDetected() //Indicates when the sensor identifies a heartbeat
 {
@@ -72,12 +72,12 @@ void OnMessage(){ //Display initial message
   M5.Lcd.setTextSize(6);        
   M5.Lcd.print("Welcome!");             //Prints initial messagen on the screen
 
-  M5.Lcd.setTextColor(0xffff, 0x07e0);   //Set text characteristics
+  M5.Lcd.setTextColor(0xffff, 0x07e0);  //Set text characteristics
   M5.Lcd.setCursor(40,100);     
   M5.Lcd.print("Yusaeid");      
-  M5.Lcd.setTextColor(0x061d, 0xffff);   //Set text characteristics
+  M5.Lcd.setTextColor(0x061d, 0xffff);  //Set text characteristics
   
-  Serial.println("It's on!");              //Send debugging signal to the computer 
+  Serial.println("It's on!");           //Send debugging signal to the computer 
 }
 
 void ShowHeartBeat(int &count){
@@ -108,7 +108,7 @@ void startButton(){
   M5.Lcd.fillScreen(0xffff);            // Set text characteristics
   M5.Lcd.setCursor(20,50);
   M5.Lcd.setTextSize(3); 
-  M5.Lcd.print("Please setup the");    // Print message to wear m5
+  M5.Lcd.print("Please setup the");     // Print message to wear m5
   M5.Lcd.setCursor(30,75);
   M5.Lcd.print("oxymeter first,");
   M5.Lcd.setCursor(30,100);
@@ -126,15 +126,15 @@ void setup() {                          //Function executed at the beginning of 
   OnMessage();                          //Display initial message
   delay(5000);                          //for 5 seconds
   InitiateSensor();                     //Try to turn sensor on
-  if (!startMeasure) {
+  if (!startMeasure) {                  //Print message to wear M5
     startButton();
   }
 }
 
 void loop() {
-  M5.update();
-  if (M5.BtnA.wasReleased() || M5.BtnA.pressedFor(1000, 200)) {
-    startMeasure = true;
+  M5.update();                          //Update button status
+  if (M5.BtnA.wasReleased() || M5.BtnA.pressedFor(1000, 200)) { //If button A is pressed
+    startMeasure = true;                //Start measuring
   }
   if (startMeasure){
  ShowHeartBeat(distressCount);          //Show measured heartrate
