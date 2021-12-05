@@ -8,16 +8,21 @@ BluetoothSerial SerialBT;            //Rename Bluetooth
 PulseOximeter pox;                   //Rename sensor
 uint32_t tsLastReport = 0;
 int distressCount = 0;
+bool startMeasure = false;
 
 void onBeatDetected() //Indicates when the sensor identifies a heartbeat
 {
     Serial.println("B:1");           //Indicate heartbeat detection
 }
 
-
 void InitiateSensor(){ //Turns the sensor and its ports on
+  
   if (!pox.begin()) {
-        Serial.println("ERROR: Failed to initialize pulse oximeter");  //Send error message to the 
+        Serial.println("ERROR: Failed to initialize pulse oximeter");  //Send error message to the computer
+        M5.Lcd.clear();
+        M5.Lcd.fillScreen(0xffff);
+        M5.Lcd.setCursor(0,0); //Change text characteristics
+        M5.Lcd.setTextSize(3);  
         M5.Lcd.println("ERROR: Failed to initialize pulse oximeter");  //Display error message on the screen
         delay(10000);
   } else {
@@ -34,7 +39,6 @@ void SendBluetooth(int &count){ //Controls the communication with the phone
   //Print text for the heart rate status
   M5.Lcd.print("Status: ");
   if (pox.getHeartRate() > 10 && pox.getHeartRate() < 100) {  //Normal heartbeat configuration
-    SerialBT.println("A");    //Send bluetooth signal
     Serial.println("Normal"); //Send debugging signal to the computer
     M5.Lcd.setCursor(70,120); //Set text characteristics
     M5.Lcd.setTextColor(0x07e0, 0xffff);   //Set text characteristics
@@ -43,7 +47,6 @@ void SendBluetooth(int &count){ //Controls the communication with the phone
     count = 0; //Reset distress count
     
   } else {                                                    //Abnormal heart rate
-    SerialBT.println("B");    //Send bluetooth signal
     Serial.println("Alert!"); //Send debugging signal to the computer  
     Serial.println(count);    //Send counter to the computer
     M5.Lcd.setCursor(50,120); //Set text characteristics
@@ -53,7 +56,7 @@ void SendBluetooth(int &count){ //Controls the communication with the phone
     count++;                  //Increases distress counter
     
     if (count > 9) {          //Activate intervention measure if there are 10s of tachycardia
-       SerialBT.println("C");                 //Send bluetooth signal
+       SerialBT.println('1');                 //Send bluetooth signal
        Serial.println("Sending alert...");    //Send debugging signal to the computer
        M5.Lcd.setCursor(0,160);               //Set text characteristics
        M5.Lcd.setTextSize(3);
@@ -74,7 +77,7 @@ void OnMessage(){ //Display initial message
   M5.Lcd.print("Yusaeid");      
   M5.Lcd.setTextColor(0x061d, 0xffff);   //Set text characteristics
   
-  Serial.print("It's on!");              //Send debugging signal to the computer 
+  Serial.println("It's on!");              //Send debugging signal to the computer 
 }
 
 void ShowHeartBeat(int &count){
@@ -100,6 +103,22 @@ void ShowHeartBeat(int &count){
   }
 }
 
+void startButton(){
+  M5.Lcd.clear();                       // Reset M5 LCD screen content
+  M5.Lcd.fillScreen(0xffff);            // Set text characteristics
+  M5.Lcd.setCursor(20,50);
+  M5.Lcd.setTextSize(3); 
+  M5.Lcd.print("Please setup the");    // Print message to wear m5
+  M5.Lcd.setCursor(30,75);
+  M5.Lcd.print("oxymeter first,");
+  M5.Lcd.setCursor(30,100);
+  M5.Lcd.print("then press the"); 
+  M5.Lcd.setCursor(30,125);
+  M5.Lcd.print("left button to"); 
+  M5.Lcd.setCursor(20,150);
+  M5.Lcd.print("start measuring."); 
+  Serial.println("Loop started. You can press the button.");
+}
 
 void setup() {                          //Function executed at the beginning of the code
   SerialBT.begin("M5");                 //Turn Bluetooth on
@@ -107,8 +126,17 @@ void setup() {                          //Function executed at the beginning of 
   OnMessage();                          //Display initial message
   delay(5000);                          //for 5 seconds
   InitiateSensor();                     //Try to turn sensor on
+  if (!startMeasure) {
+    startButton();
+  }
 }
 
 void loop() {
+  M5.update();
+  if (M5.BtnA.wasReleased() || M5.BtnA.pressedFor(1000, 200)) {
+    startMeasure = true;
+  }
+  if (startMeasure){
  ShowHeartBeat(distressCount);          //Show measured heartrate
+  } 
 }
