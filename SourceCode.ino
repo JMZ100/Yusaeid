@@ -3,9 +3,9 @@
 #include "BluetoothSerial.h"         //Bluetooth library
 #include "MAX30100_PulseOximeter.h"  //Sensor library
 
-#define REPORTING_PERIOD_MS     1000 //Period between updates
+#define updateTime_ms     1000 //Period between updates
 BluetoothSerial SerialBT;            //Rename Bluetooth 
-PulseOximeter pox;                   //Rename sensor
+PulseOximeter sensor;                   //Rename sensor
 uint32_t tsLastReport = 0;           //Start timer
 int distressCount = 0;               //Counter for sensor stabilisation
 bool startMeasure = false;           //Wait until M5 is ready to start measuring
@@ -17,7 +17,7 @@ void onBeatDetected() //Indicates when the sensor identifies a heartbeat
 
 void InitiateSensor(){ //Turns the sensor and its ports on
   
-  if (!pox.begin()) {
+  if (!sensor.begin()) {
         Serial.println("ERROR: Failed to initialize pulse oximeter");  //Send error message to the computer
         M5.Lcd.clear();
         M5.Lcd.fillScreen(0xffff);
@@ -29,7 +29,7 @@ void InitiateSensor(){ //Turns the sensor and its ports on
         Serial.println("SUCCESS");  //Succesful sensor connection
   }
 
-    pox.setOnBeatDetectedCallback(onBeatDetected); 
+    sensor.setOnBeatDetectedCallback(onBeatDetected); 
 }
 
 void SendBluetooth(int &count){ //Controls the communication with the phone
@@ -38,7 +38,7 @@ void SendBluetooth(int &count){ //Controls the communication with the phone
   M5.Lcd.setTextSize(4);
   //Print text for the heart rate status
   M5.Lcd.print("Status: ");
-  if (pox.getHeartRate() > 10 && pox.getHeartRate() < 100) {  //Normal heartbeat configuration
+  if (sensor.getHeartRate() > 10 && sensor.getHeartRate() < 100) {  //Normal heartbeat configuration
     Serial.println("Normal"); //Send debugging signal to the computer
     M5.Lcd.setCursor(70,120); //Set text characteristics
     M5.Lcd.setTextColor(0x07e0, 0xffff);   //Set text characteristics
@@ -81,12 +81,12 @@ void OnMessage(){ //Display initial message
 }
 
 void ShowHeartBeat(int &count){
-   pox.update();                  //Get new value of the sensor measurements
+   sensor.update();                  //Get new value of the sensor measurements
 
-  if (millis() - tsLastReport > REPORTING_PERIOD_MS) {  //If the time interval is larger than the desired frequency 
+  if (millis() - tsLastReport > updateTime_ms) {  //If the time interval is larger than the desired frequency 
         
         Serial.print("Heart rate:");          // Send measurement to the computer
-        Serial.print(pox.getHeartRate());     
+        Serial.print(sensor.getHeartRate());     
         Serial.print(" bpm \n");               
         
         M5.Lcd.clear();                       // Reset M5 LCD screen content
@@ -95,7 +95,7 @@ void ShowHeartBeat(int &count){
         M5.Lcd.setTextSize(4);                
         M5.Lcd.print("Heart rate:");          // Print heartrate value on the screen
         M5.Lcd.setCursor(50,40);              // Set text characteristics
-        M5.Lcd.print(pox.getHeartRate());     // Print heartrate value on the screen
+        M5.Lcd.print(sensor.getHeartRate());     // Print heartrate value on the screen
         M5.Lcd.print(" bpm");                 
         
         SendBluetooth(count);                 // Send Bluetooth signal 
